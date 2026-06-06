@@ -1,0 +1,1438 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Puff 9K Manager</title>
+<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --glass: rgba(255,255,255,0.12);
+    --glass-border: rgba(255,255,255,0.25);
+    --glass-hover: rgba(255,255,255,0.18);
+    --blur: blur(24px) saturate(180%);
+    --blur-heavy: blur(40px) saturate(200%);
+    --accent: #5E5CE6;
+    --accent2: #BF5AF2;
+    --green: #30D158;
+    --red: #FF453A;
+    --orange: #FF9F0A;
+    --blue: #0A84FF;
+    --yellow: #FFD60A;
+    --text: rgba(255,255,255,0.95);
+    --text-sec: rgba(255,255,255,0.55);
+    --text-ter: rgba(255,255,255,0.3);
+    --r: 20px;
+    --r-sm: 14px;
+    --r-lg: 28px;
+    --shadow: 0 8px 32px rgba(0,0,0,0.4);
+    --shadow-sm: 0 4px 16px rgba(0,0,0,0.3);
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+
+  body {
+    font-family: -apple-system, 'SF Pro Display', sans-serif;
+    background: #0a0a0f;
+    color: var(--text);
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ANIMATED BG */
+  .bg {
+    position: fixed; inset: 0; z-index: 0; overflow: hidden;
+  }
+  .bg-blob {
+    position: absolute; border-radius: 50%;
+    filter: blur(80px); opacity: 0.35;
+    animation: float 8s ease-in-out infinite;
+  }
+  .bg-blob:nth-child(1){ width:500px;height:500px;background:radial-gradient(circle,#5E5CE6,transparent);top:-100px;left:-100px;animation-delay:0s; }
+  .bg-blob:nth-child(2){ width:400px;height:400px;background:radial-gradient(circle,#BF5AF2,transparent);bottom:-50px;right:-50px;animation-delay:-3s; }
+  .bg-blob:nth-child(3){ width:300px;height:300px;background:radial-gradient(circle,#0A84FF,transparent);top:50%;left:50%;transform:translate(-50%,-50%);animation-delay:-6s; }
+  @keyframes float {
+    0%,100%{ transform:translateY(0) scale(1); }
+    50%{ transform:translateY(-30px) scale(1.05); }
+  }
+  .bg-blob:nth-child(2) { animation-name: float2; }
+  @keyframes float2 {
+    0%,100%{ transform:translateY(0) scale(1); }
+    50%{ transform:translateY(25px) scale(0.97); }
+  }
+
+  /* LAYOUT */
+  #app { position:relative; z-index:1; max-width:430px; margin:0 auto; padding-bottom:100px; }
+
+  /* GLASS CARD */
+  .glass {
+    background: var(--glass);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r);
+    box-shadow: var(--shadow);
+  }
+  .glass-sm {
+    background: var(--glass);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--r-sm);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* HEADER */
+  .header {
+    padding: 60px 20px 20px;
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .header-left h1 {
+    font-size: 32px; font-weight: 700; letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #fff 40%, rgba(255,255,255,0.6));
+    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+  }
+  .header-left p { font-size: 13px; color: var(--text-sec); margin-top: 2px; }
+  .header-avatar {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: 700; cursor: pointer;
+    border: 2px solid var(--glass-border);
+    box-shadow: 0 0 20px rgba(94,92,230,0.5);
+    transition: transform 0.2s;
+  }
+  .header-avatar:active { transform: scale(0.95); }
+
+  /* MEMBER SELECTOR */
+  .member-bar {
+    padding: 0 20px 16px;
+    display: flex; gap: 10px; overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .member-bar::-webkit-scrollbar { display:none; }
+  .member-chip {
+    flex-shrink: 0;
+    padding: 8px 16px; border-radius: 100px;
+    font-size: 14px; font-weight: 500; cursor: pointer;
+    background: var(--glass); border: 1px solid var(--glass-border);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    transition: all 0.2s; white-space: nowrap;
+    color: var(--text-sec);
+  }
+  .member-chip.active {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent; color: #fff;
+    box-shadow: 0 4px 16px rgba(94,92,230,0.5);
+  }
+  .member-chip:active { transform: scale(0.95); }
+
+  /* STATS GRID */
+  .stats-grid {
+    padding: 0 20px 16px;
+    display: grid; grid-template-columns: 1fr 1fr; gap: 12px;
+  }
+  .stat-card {
+    padding: 16px; border-radius: var(--r);
+    background: var(--glass); border: 1px solid var(--glass-border);
+    backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+    transition: transform 0.2s;
+  }
+  .stat-card:active { transform: scale(0.97); }
+  .stat-card.full { grid-column: 1/-1; }
+  .stat-label {
+    font-size: 12px; font-weight: 500; color: var(--text-sec);
+    text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .stat-label .dot {
+    width: 6px; height: 6px; border-radius: 50%;
+  }
+  .stat-value {
+    font-size: 28px; font-weight: 700; letter-spacing: -0.5px;
+  }
+  .stat-sub {
+    font-size: 12px; color: var(--text-sec); margin-top: 2px;
+  }
+
+  /* SECTION */
+  .section { padding: 0 20px 16px; }
+  .section-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 12px;
+  }
+  .section-title {
+    font-size: 18px; font-weight: 600; letter-spacing: -0.3px;
+  }
+  .section-btn {
+    font-size: 13px; color: var(--accent); font-weight: 500; cursor: pointer;
+    padding: 4px 10px; border-radius: 8px;
+    background: rgba(94,92,230,0.15);
+    transition: background 0.2s;
+  }
+  .section-btn:active { background: rgba(94,92,230,0.3); }
+
+  /* QUICK DELIVERY BUTTON */
+  .quick-delivery-btn {
+    margin: 0 20px 16px;
+    padding: 18px 20px;
+    border-radius: var(--r);
+    background: linear-gradient(135deg, #FF9F0A, #FF6B0A);
+    border: none; cursor: pointer; width: calc(100% - 40px);
+    display: flex; align-items: center; justify-content: space-between;
+    box-shadow: 0 8px 24px rgba(255,159,10,0.4);
+    transition: all 0.2s;
+    color: #fff;
+  }
+  .quick-delivery-btn:active { transform: scale(0.98); box-shadow: 0 4px 12px rgba(255,159,10,0.3); }
+  .quick-delivery-left { display: flex; align-items: center; gap: 12px; }
+  .quick-delivery-icon {
+    width: 42px; height: 42px; border-radius: 12px;
+    background: rgba(255,255,255,0.2); display: flex; align-items: center;
+    justify-content: center; font-size: 20px;
+  }
+  .quick-delivery-text h3 { font-size: 16px; font-weight: 600; }
+  .quick-delivery-text p { font-size: 12px; opacity: 0.8; margin-top: 1px; }
+  .quick-delivery-arrow { font-size: 20px; opacity: 0.7; }
+
+  /* DELIVERY LIST */
+  .delivery-item {
+    padding: 14px 16px; border-radius: var(--r-sm);
+    background: var(--glass); border: 1px solid var(--glass-border);
+    backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+    margin-bottom: 8px; transition: transform 0.2s;
+    cursor: pointer;
+  }
+  .delivery-item:active { transform: scale(0.98); }
+  .delivery-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 6px;
+  }
+  .delivery-member {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .delivery-avatar {
+    width: 28px; height: 28px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700; flex-shrink: 0;
+  }
+  .delivery-name { font-size: 14px; font-weight: 600; }
+  .delivery-amount { font-size: 16px; font-weight: 700; color: var(--green); }
+  .delivery-bottom {
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .delivery-info { font-size: 12px; color: var(--text-sec); display: flex; gap: 10px; }
+  .delivery-badge {
+    font-size: 11px; font-weight: 600; padding: 3px 8px; border-radius: 100px;
+  }
+  .badge-paid { background: rgba(48,209,88,0.15); color: var(--green); }
+  .badge-pending { background: rgba(255,159,10,0.15); color: var(--orange); }
+  .badge-partial { background: rgba(10,132,255,0.15); color: var(--blue); }
+
+  /* STOCK GRID */
+  .stock-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+  }
+  .stock-item {
+    padding: 14px; border-radius: var(--r-sm);
+    background: var(--glass); border: 1px solid var(--glass-border);
+    backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+    cursor: pointer; transition: transform 0.2s;
+  }
+  .stock-item:active { transform: scale(0.96); }
+  .stock-flavor {
+    font-size: 13px; font-weight: 600; margin-bottom: 4px;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .stock-qty {
+    font-size: 26px; font-weight: 700;
+  }
+  .stock-qty.low { color: var(--red); }
+  .stock-qty.mid { color: var(--orange); }
+  .stock-qty.ok { color: var(--green); }
+  .stock-sub { font-size: 11px; color: var(--text-sec); margin-top: 2px; }
+  .stock-bar {
+    height: 3px; border-radius: 2px; background: rgba(255,255,255,0.1);
+    margin-top: 8px; overflow: hidden;
+  }
+  .stock-bar-fill {
+    height: 100%; border-radius: 2px; transition: width 0.5s;
+  }
+
+  /* RECEIPT */
+  .receipt-item {
+    padding: 14px 16px; border-radius: var(--r-sm);
+    background: var(--glass); border: 1px solid var(--glass-border);
+    backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+    margin-bottom: 8px; cursor: pointer; transition: transform 0.2s;
+  }
+  .receipt-item:active { transform: scale(0.98); }
+  .receipt-top {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 4px;
+  }
+  .receipt-title { font-size: 14px; font-weight: 600; }
+  .receipt-amount { font-size: 16px; font-weight: 700; }
+  .receipt-meta { font-size: 12px; color: var(--text-sec); display: flex; gap: 10px; }
+
+  /* BOTTOM NAV */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: 50%; transform: translateX(-50%);
+    width: 100%; max-width: 430px;
+    padding: 12px 20px calc(12px + env(safe-area-inset-bottom));
+    background: rgba(10,10,15,0.8);
+    backdrop-filter: var(--blur-heavy);
+    -webkit-backdrop-filter: var(--blur-heavy);
+    border-top: 1px solid var(--glass-border);
+    display: flex; justify-content: space-around; align-items: center;
+    z-index: 100;
+  }
+  .nav-item {
+    display: flex; flex-direction: column; align-items: center;
+    gap: 4px; cursor: pointer; padding: 4px 12px; border-radius: 12px;
+    transition: all 0.2s; min-width: 60px;
+  }
+  .nav-item:active { transform: scale(0.9); }
+  .nav-item.active .nav-icon { color: var(--accent); }
+  .nav-item.active .nav-label { color: var(--accent); }
+  .nav-icon { font-size: 22px; transition: transform 0.2s; }
+  .nav-label { font-size: 10px; font-weight: 500; color: var(--text-sec); transition: color 0.2s; }
+  .nav-item.active .nav-icon { transform: scale(1.1); }
+
+  /* MODAL */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.6);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; pointer-events: none; transition: opacity 0.3s;
+  }
+  .modal-overlay.open { opacity: 1; pointer-events: all; }
+  .modal {
+    width: 100%; max-width: 430px;
+    background: rgba(28,28,35,0.95);
+    backdrop-filter: var(--blur-heavy);
+    -webkit-backdrop-filter: var(--blur-heavy);
+    border: 1px solid var(--glass-border);
+    border-radius: 28px 28px 0 0;
+    padding: 20px 20px calc(20px + env(safe-area-inset-bottom));
+    transform: translateY(100%); transition: transform 0.4s cubic-bezier(0.32,0.72,0,1);
+    max-height: 90vh; overflow-y: auto;
+  }
+  .modal-overlay.open .modal { transform: translateY(0); }
+  .modal-handle {
+    width: 36px; height: 4px; border-radius: 2px;
+    background: rgba(255,255,255,0.2); margin: 0 auto 20px;
+  }
+  .modal-title {
+    font-size: 20px; font-weight: 700; margin-bottom: 20px;
+    display: flex; align-items: center; gap: 10px;
+  }
+
+  /* FORM */
+  .form-group { margin-bottom: 16px; }
+  .form-label {
+    font-size: 13px; font-weight: 500; color: var(--text-sec);
+    margin-bottom: 8px; display: block;
+  }
+  .form-input {
+    width: 100%; padding: 14px 16px; border-radius: 14px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: #fff; font-size: 15px; font-family: inherit;
+    outline: none; transition: border-color 0.2s, background 0.2s;
+    -webkit-appearance: none;
+  }
+  .form-input:focus {
+    border-color: var(--accent); background: rgba(94,92,230,0.1);
+  }
+  .form-input::placeholder { color: rgba(255,255,255,0.25); }
+  .form-select {
+    width: 100%; padding: 14px 16px; border-radius: 14px;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: #fff; font-size: 15px; font-family: inherit;
+    outline: none; appearance: none; cursor: pointer;
+  }
+  .form-select option { background: #1c1c23; }
+  .chips-row {
+    display: flex; gap: 8px; flex-wrap: wrap;
+  }
+  .chip {
+    padding: 8px 14px; border-radius: 100px; font-size: 13px; font-weight: 500;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    cursor: pointer; transition: all 0.2s; color: var(--text-sec);
+  }
+  .chip.selected {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-color: transparent; color: #fff;
+  }
+  .btn-primary {
+    width: 100%; padding: 16px; border-radius: var(--r); border: none;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
+    box-shadow: 0 4px 20px rgba(94,92,230,0.5);
+    transition: all 0.2s; font-family: inherit;
+    margin-top: 8px;
+  }
+  .btn-primary:active { transform: scale(0.98); box-shadow: 0 2px 10px rgba(94,92,230,0.3); }
+  .btn-secondary {
+    width: 100%; padding: 16px; border-radius: var(--r); border: none;
+    background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+    color: #fff; font-size: 16px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; font-family: inherit; margin-top: 8px;
+  }
+  .btn-secondary:active { background: rgba(255,255,255,0.15); }
+
+  /* RECEIPT MODAL */
+  .receipt-card {
+    background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 20px; padding: 20px; margin: 16px 0;
+    font-family: 'Courier New', monospace;
+  }
+  .receipt-card h3 {
+    font-size: 14px; font-weight: 700; text-align: center;
+    letter-spacing: 2px; margin-bottom: 16px; color: var(--text-sec);
+  }
+  .receipt-row {
+    display: flex; justify-content: space-between;
+    font-size: 13px; padding: 4px 0; border-bottom: 1px dashed rgba(255,255,255,0.1);
+  }
+  .receipt-row:last-child { border-bottom: none; }
+  .receipt-total {
+    display: flex; justify-content: space-between;
+    font-size: 16px; font-weight: 700; padding-top: 12px; margin-top: 8px;
+    border-top: 1px solid rgba(255,255,255,0.2);
+  }
+
+  /* TABS */
+  .tabs {
+    display: flex; background: rgba(255,255,255,0.06);
+    border-radius: 12px; padding: 3px; margin-bottom: 16px;
+  }
+  .tab {
+    flex: 1; padding: 8px; text-align: center; border-radius: 10px;
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    color: var(--text-sec); transition: all 0.2s;
+  }
+  .tab.active {
+    background: rgba(255,255,255,0.12); color: #fff;
+  }
+
+  /* PAGES */
+  .page { display: none; animation: fadeUp 0.3s ease; }
+  .page.active { display: block; }
+  @keyframes fadeUp {
+    from { opacity:0; transform: translateY(10px); }
+    to { opacity:1; transform: translateY(0); }
+  }
+
+  /* EMPTY STATE */
+  .empty-state {
+    text-align: center; padding: 40px 20px; color: var(--text-sec);
+  }
+  .empty-state .icon { font-size: 48px; margin-bottom: 12px; }
+  .empty-state p { font-size: 14px; }
+
+  /* BALANCE CARD */
+  .balance-card {
+    margin: 0 20px 16px;
+    padding: 24px 20px;
+    border-radius: var(--r-lg);
+    background: linear-gradient(135deg, rgba(94,92,230,0.3), rgba(191,90,242,0.3));
+    border: 1px solid rgba(255,255,255,0.2);
+    backdrop-filter: var(--blur);
+    -webkit-backdrop-filter: var(--blur);
+    box-shadow: 0 8px 32px rgba(94,92,230,0.3), inset 0 1px 0 rgba(255,255,255,0.15);
+  }
+  .balance-label { font-size: 13px; color: rgba(255,255,255,0.7); margin-bottom: 4px; }
+  .balance-amount { font-size: 42px; font-weight: 700; letter-spacing: -1px; }
+  .balance-sub { font-size: 13px; color: rgba(255,255,255,0.6); margin-top: 8px; }
+  .balance-row { display: flex; gap: 12px; margin-top: 16px; }
+  .balance-mini { flex: 1; }
+  .balance-mini-label { font-size: 11px; color: rgba(255,255,255,0.5); margin-bottom: 2px; }
+  .balance-mini-val { font-size: 16px; font-weight: 600; }
+
+  /* MEMBER STATS */
+  .member-stat-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 16px; border-radius: var(--r-sm);
+    background: var(--glass); border: 1px solid var(--glass-border);
+    backdrop-filter: var(--blur); -webkit-backdrop-filter: var(--blur);
+    margin-bottom: 8px;
+  }
+  .member-stat-left { display: flex; align-items: center; gap: 12px; }
+  .member-stat-avatar {
+    width: 36px; height: 36px; border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px; font-weight: 700;
+  }
+  .member-stat-name { font-size: 15px; font-weight: 600; }
+  .member-stat-sub { font-size: 12px; color: var(--text-sec); }
+  .member-stat-right { text-align: right; }
+  .member-stat-amount { font-size: 16px; font-weight: 700; color: var(--green); }
+  .member-stat-pending { font-size: 12px; color: var(--orange); }
+
+  /* NOTIFICATION DOT */
+  .notif-dot {
+    width: 8px; height: 8px; background: var(--red); border-radius: 50%;
+    position: absolute; top: 0; right: 0;
+  }
+
+  /* TOGGLE */
+  .toggle-row {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 0;
+  }
+  .toggle-label { font-size: 15px; }
+  .toggle {
+    width: 50px; height: 28px; border-radius: 14px;
+    background: rgba(255,255,255,0.15); position: relative;
+    cursor: pointer; transition: background 0.3s;
+  }
+  .toggle.on { background: var(--green); }
+  .toggle-knob {
+    position: absolute; top: 3px; left: 3px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: #fff; transition: left 0.3s; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  }
+  .toggle.on .toggle-knob { left: 25px; }
+
+  /* PROGRESS */
+  .progress-bar {
+    height: 6px; border-radius: 3px;
+    background: rgba(255,255,255,0.1); overflow: hidden; margin-top: 8px;
+  }
+  .progress-fill {
+    height: 100%; border-radius: 3px;
+    background: linear-gradient(90deg, var(--accent), var(--accent2));
+    transition: width 0.5s;
+  }
+
+  /* SCROLLABLE */
+  .scroll-x {
+    display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
+    scrollbar-width: none;
+  }
+  .scroll-x::-webkit-scrollbar { display: none; }
+
+  /* DATE DIVIDER */
+  .date-divider {
+    font-size: 12px; color: var(--text-ter); font-weight: 500;
+    text-transform: uppercase; letter-spacing: 0.5px;
+    padding: 8px 0 6px; text-align: center;
+  }
+</style>
+</head>
+<body>
+
+<div class="bg">
+  <div class="bg-blob"></div>
+  <div class="bg-blob"></div>
+  <div class="bg-blob"></div>
+</div>
+
+<div id="app">
+
+  <!-- PAGE: HOME -->
+  <div class="page active" id="page-home">
+    <div class="header">
+      <div class="header-left">
+        <h1>💨 Puff 9K</h1>
+        <p id="today-date">Chargement...</p>
+      </div>
+      <div class="header-avatar" onclick="showMemberModal()" id="current-avatar">Y</div>
+    </div>
+
+    <!-- MEMBER SELECTOR -->
+    <div class="member-bar">
+      <div class="member-chip active" onclick="selectMember('all', this)">Tous</div>
+      <div class="member-chip" onclick="selectMember('Yael', this)">Yaël</div>
+      <div class="member-chip" onclick="selectMember('Marius', this)">Marius</div>
+      <div class="member-chip" onclick="selectMember('Dorian', this)">Dorian</div>
+      <div class="member-chip" onclick="selectMember('Maloy', this)">Maloy</div>
+    </div>
+
+    <!-- BALANCE CARD -->
+    <div class="balance-card" id="balance-card">
+      <div class="balance-label">NET PROFIT👅</div>
+      <div class="balance-amount" id="total-received">0 €</div>
+      <div class="balance-row">
+        <div class="balance-mini">
+          <div class="balance-mini-label">En attente</div>
+          <div class="balance-mini-val" id="total-pending" style="color:var(--orange)">0 €</div>
+        </div>
+        <div class="balance-mini">
+          <div class="balance-mini-label">Livraisons</div>
+          <div class="balance-mini-val" id="total-deliveries">0</div>
+        </div>
+        <div class="balance-mini">
+          <div class="balance-mini-label">Unités</div>
+          <div class="balance-mini-val" id="total-units">0</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATS GRID -->
+    <div class="stats-grid">
+      <div class="stat-card" onclick="navigateTo('comptes')">
+        <div class="stat-label"><span class="dot" style="background:var(--green)"></span>CA Semaine</div>
+        <div class="stat-value" id="ca-week">0 €</div>
+        <div class="stat-sub">Cette semaine</div>
+      </div>
+      <div class="stat-card" onclick="navigateTo('stock')">
+        <div class="stat-label"><span class="dot" style="background:var(--blue)"></span>Stock</div>
+        <div class="stat-value" id="stock-total">0</div>
+        <div class="stat-sub">unités dispo</div>
+      </div>
+    </div>
+
+    <!-- QUICK DELIVERY -->
+    <button class="quick-delivery-btn" onclick="openQuickDelivery()">
+      <div class="quick-delivery-left">
+        <div class="quick-delivery-icon">⚡</div>
+        <div class="quick-delivery-text">
+          <h3>Livraison Rapide</h3>
+          <p>Juste le montant encaissé</p>
+        </div>
+      </div>
+      <div class="quick-delivery-arrow">›</div>
+    </button>
+
+    <!-- RECENT DELIVERIES -->
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">📦 Dernières Livraisons</div>
+        <div class="section-btn" onclick="navigateTo('livraisons')">Voir tout</div>
+      </div>
+      <div id="recent-deliveries-list">
+        <div class="empty-state">
+          <div class="icon">📦</div>
+          <p>Aucune livraison pour l'instant</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: LIVRAISONS -->
+  <div class="page" id="page-livraisons">
+    <div class="header">
+      <div class="header-left">
+        <h1>📦 Livraisons</h1>
+        <p id="delivery-count">0 livraisons</p>
+      </div>
+      <div class="header-avatar" onclick="openAddDelivery()" style="background:linear-gradient(135deg,var(--green),#0aaa3f)">+</div>
+    </div>
+    <div class="member-bar">
+      <div class="member-chip active" onclick="filterDeliveries('all', this)">Toutes</div>
+      <div class="member-chip" onclick="filterDeliveries('Yael', this)">Yaël</div>
+      <div class="member-chip" onclick="filterDeliveries('Marius', this)">Marius</div>
+      <div class="member-chip" onclick="filterDeliveries('Dorian', this)">Dorian</div>
+      <div class="member-chip" onclick="filterDeliveries('Maloy', this)">Maloy</div>
+    </div>
+    <div class="section">
+      <div class="tabs">
+        <div class="tab active" onclick="filterStatus('all',this)">Toutes</div>
+        <div class="tab" onclick="filterStatus('paid',this)">Payées</div>
+        <div class="tab" onclick="filterStatus('pending',this)">En attente</div>
+      </div>
+      <div id="all-deliveries-list"></div>
+    </div>
+  </div>
+
+  <!-- PAGE: STOCK -->
+  <div class="page" id="page-stock">
+    <div class="header">
+      <div class="header-left">
+        <h1>📦 Stock</h1>
+        <p>9K Puff Manager</p>
+      </div>
+      <div class="header-avatar" onclick="openAddStock()" style="background:linear-gradient(135deg,var(--blue),#0060cc)">+</div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">🧪 Goûts en stock</div>
+        <div class="section-btn" onclick="openAddFlavor()">+ Goût</div>
+      </div>
+      <div class="stock-grid" id="stock-grid"></div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">📊 Résumé</div>
+      </div>
+      <div class="stat-card full">
+        <div class="stat-label"><span class="dot" style="background:var(--blue)"></span>Total en stock</div>
+        <div class="stat-value" id="stock-total-page">0 unités</div>
+        <div class="progress-bar"><div class="progress-fill" id="stock-progress" style="width:0%"></div></div>
+        <div class="stat-sub" id="stock-sub">Capacité max : 0 / 0</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: COMPTES -->
+  <div class="page" id="page-comptes">
+    <div class="header">
+      <div class="header-left">
+        <h1>💰 Comptes</h1>
+        <p>Suivi financier</p>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title" style="margin-bottom:12px">👥 Par Membre</div>
+      <div id="members-finance-list"></div>
+    </div>
+    <div class="section">
+      <div class="section-header">
+        <div class="section-title">🧾 Reçus</div>
+        <div class="section-btn" onclick="generateReceipt()">Générer</div>
+      </div>
+      <div id="receipts-list">
+        <div class="empty-state"><div class="icon">🧾</div><p>Aucun reçu généré</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PAGE: PROFIL -->
+  <div class="page" id="page-profil">
+    <div class="header">
+      <div class="header-left">
+        <h1>⚙️ Réglages</h1>
+        <p>Configuration</p>
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title" style="margin-bottom:12px">👥 Membres</div>
+      <div id="members-list-settings">
+        <!-- members -->
+      </div>
+    </div>
+    <div class="section">
+      <div class="section-title" style="margin-bottom:12px">📱 App</div>
+      <div class="glass-sm" style="padding:0 16px">
+        <div class="toggle-row">
+          <span class="toggle-label">🔔 Alertes stock faible</span>
+          <div class="toggle on" onclick="toggleThis(this)"><div class="toggle-knob"></div></div>
+        </div>
+        <div class="toggle-row" style="border-top:1px solid rgba(255,255,255,0.06)">
+          <span class="toggle-label">💾 Sauvegarde auto</span>
+          <div class="toggle on" onclick="toggleThis(this)"><div class="toggle-knob"></div></div>
+        </div>
+        <div class="toggle-row" style="border-top:1px solid rgba(255,255,255,0.06)">
+          <span class="toggle-label">📊 Notifications paiement</span>
+          <div class="toggle" onclick="toggleThis(this)"><div class="toggle-knob"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <button class="btn-secondary" onclick="exportData()" style="margin-top:0">📤 Exporter les données</button>
+      <button class="btn-secondary" onclick="if(confirm('Réinitialiser toutes les données ?')) resetData()" style="background:rgba(255,69,58,0.15);border-color:rgba(255,69,58,0.3);color:var(--red)">🗑️ Réinitialiser</button>
+    </div>
+  </div>
+
+</div><!-- end app -->
+
+<!-- BOTTOM NAV -->
+<div class="bottom-nav">
+  <div class="nav-item active" onclick="navigateTo('home')" id="nav-home">
+    <div class="nav-icon">🏠</div>
+    <div class="nav-label">Accueil</div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('livraisons')" id="nav-livraisons">
+    <div class="nav-icon">📦</div>
+    <div class="nav-label">Livraisons</div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('stock')" id="nav-stock">
+    <div class="nav-icon">🧪</div>
+    <div class="nav-label">Stock</div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('comptes')" id="nav-comptes">
+    <div class="nav-icon">💰</div>
+    <div class="nav-label">Comptes</div>
+  </div>
+  <div class="nav-item" onclick="navigateTo('profil')" id="nav-profil">
+    <div class="nav-icon">⚙️</div>
+    <div class="nav-label">Réglages</div>
+  </div>
+</div>
+
+<!-- MODAL: QUICK DELIVERY -->
+<div class="modal-overlay" id="modal-quick">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">⚡ Livraison Rapide</div>
+    <div class="form-group">
+      <label class="form-label">Qui livre ?</label>
+      <div class="chips-row" id="quick-member-chips">
+        <div class="chip" onclick="selectChip(this,'qmember','Yael')">Yaël</div>
+        <div class="chip" onclick="selectChip(this,'qmember','Marius')">Marius</div>
+        <div class="chip" onclick="selectChip(this,'qmember','Dorian')">Dorian</div>
+        <div class="chip" onclick="selectChip(this,'qmember','Maloy')">Maloy</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Montant encaissé (€)</label>
+      <input class="form-input" id="quick-amount" type="number" placeholder="Ex: 150" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Payé ?</label>
+      <div class="chips-row">
+        <div class="chip selected" onclick="selectChip(this,'qstatus','paid')">✅ Reçu</div>
+        <div class="chip" onclick="selectChip(this,'qstatus','pending')">⏳ En attente</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="addQuickDelivery()">⚡ Enregistrer</button>
+    <button class="btn-secondary" onclick="closeModal('modal-quick')">Annuler</button>
+  </div>
+</div>
+
+<!-- MODAL: ADD DELIVERY (FULL) -->
+<div class="modal-overlay" id="modal-delivery">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📦 Nouvelle Livraison</div>
+    <div class="form-group">
+      <label class="form-label">Livreur</label>
+      <div class="chips-row">
+        <div class="chip" onclick="selectChip(this,'dmember','Yael')">Yaël</div>
+        <div class="chip" onclick="selectChip(this,'dmember','Marius')">Marius</div>
+        <div class="chip" onclick="selectChip(this,'dmember','Dorian')">Dorian</div>
+        <div class="chip" onclick="selectChip(this,'dmember','Maloy')">Maloy</div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Goût / Référence</label>
+      <input class="form-input" id="d-flavor" type="text" placeholder="Ex: Watermelon Ice, Mixed...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Quantité livrée</label>
+      <input class="form-input" id="d-qty" type="number" placeholder="Ex: 5" inputmode="numeric">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Prix unitaire (€)</label>
+      <input class="form-input" id="d-price" type="number" placeholder="Ex: 25" inputmode="decimal">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Montant total</label>
+      <input class="form-input" id="d-total" type="number" placeholder="Calculé auto" inputmode="decimal" readonly>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Client / Note</label>
+      <input class="form-input" id="d-client" type="text" placeholder="Ex: Client régulier, zone nord...">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Statut paiement</label>
+      <div class="chips-row">
+        <div class="chip selected" onclick="selectChip(this,'dstatus','paid')">✅ Payé</div>
+        <div class="chip" onclick="selectChip(this,'dstatus','pending')">⏳ Attente</div>
+        <div class="chip" onclick="selectChip(this,'dstatus','partial')">💛 Partiel</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="addDelivery()">✅ Enregistrer</button>
+    <button class="btn-secondary" onclick="closeModal('modal-delivery')">Annuler</button>
+  </div>
+</div>
+
+<!-- MODAL: ADD STOCK -->
+<div class="modal-overlay" id="modal-stock">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">📦 Modifier le Stock</div>
+    <div class="form-group">
+      <label class="form-label">Goût</label>
+      <input class="form-input" id="s-flavor" type="text" placeholder="Ex: Watermelon Ice">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Quantité à ajouter</label>
+      <input class="form-input" id="s-qty" type="number" placeholder="Ex: 10" inputmode="numeric">
+    </div>
+    <div class="form-group">
+      <label class="form-label">Opération</label>
+      <div class="chips-row">
+        <div class="chip selected" onclick="selectChip(this,'sop','add')">➕ Ajouter</div>
+        <div class="chip" onclick="selectChip(this,'sop','set')">📝 Définir</div>
+        <div class="chip" onclick="selectChip(this,'sop','remove')">➖ Retirer</div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="updateStock()">💾 Enregistrer</button>
+    <button class="btn-secondary" onclick="closeModal('modal-stock')">Annuler</button>
+  </div>
+</div>
+
+<!-- MODAL: RECEIPT VIEW -->
+<div class="modal-overlay" id="modal-receipt">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title">🧾 Reçu</div>
+    <div id="receipt-content"></div>
+    <button class="btn-primary" onclick="closeModal('modal-receipt')">Fermer</button>
+  </div>
+</div>
+
+<!-- MODAL: DELIVERY DETAIL -->
+<div class="modal-overlay" id="modal-detail">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="detail-title">Détail Livraison</div>
+    <div id="detail-content"></div>
+    <button class="btn-primary" id="detail-pay-btn" style="display:none" onclick="markPaid()">✅ Marquer Payé</button>
+    <button class="btn-secondary" id="detail-delete-btn" onclick="deleteDelivery()" style="background:rgba(255,69,58,0.15);border-color:rgba(255,69,58,0.3);color:var(--red)">🗑️ Supprimer</button>
+    <button class="btn-secondary" onclick="closeModal('modal-detail')">Fermer</button>
+  </div>
+</div>
+
+<script>
+// ===== STATE =====
+let state = {
+  currentMember: 'all',
+  currentPage: 'home',
+  selectedDelivery: null,
+  deliveryFilter: 'all',
+  statusFilter: 'all',
+  chipSelections: {},
+};
+
+const MEMBERS = [
+  { id: 'Yael', name: 'Yaël', emoji: 'Y', color: 'linear-gradient(135deg,#5E5CE6,#BF5AF2)' },
+  { id: 'Marius', name: 'Marius', emoji: 'M', color: 'linear-gradient(135deg,#0A84FF,#0D6EFD)' },
+  { id: 'Dorian', name: 'Dorian', emoji: 'D', color: 'linear-gradient(135deg,#30D158,#0aaa3f)' },
+  { id: 'Maloy', name: 'Maloy', emoji: 'Ml', color: 'linear-gradient(135deg,#FF9F0A,#FF6B0A)' },
+];
+
+// ===== DATA (localStorage) =====
+function loadData() {
+  try {
+    return JSON.parse(localStorage.getItem('puff9k_data') || '{}');
+  } catch { return {}; }
+}
+function saveData(data) {
+  localStorage.setItem('puff9k_data', JSON.stringify(data));
+}
+function getData() {
+  const d = loadData();
+  if (!d.deliveries) d.deliveries = [];
+  if (!d.stock) d.stock = {};
+  if (!d.receipts) d.receipts = [];
+  return d;
+}
+
+// ===== HELPERS =====
+function getMemberInfo(id) {
+  return MEMBERS.find(m => m.id === id) || { id, name: id, emoji: id[0], color: 'linear-gradient(135deg,#666,#999)' };
+}
+function formatDate(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('fr-FR', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+function formatMoney(n) {
+  return (parseFloat(n)||0).toFixed(2).replace('.',',') + ' €';
+}
+function generateId() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+function statusBadge(status) {
+  if (status === 'paid') return '<span class="delivery-badge badge-paid">✅ Payé</span>';
+  if (status === 'pending') return '<span class="delivery-badge badge-pending">⏳ Attente</span>';
+  return '<span class="delivery-badge badge-partial">💛 Partiel</span>';
+}
+
+// ===== DATE =====
+function updateDate() {
+  const now = new Date();
+  const days = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+  const months = ['jan','fév','mar','avr','mai','jun','jul','aoû','sep','oct','nov','déc'];
+  document.getElementById('today-date').textContent =
+    days[now.getDay()] + ' ' + now.getDate() + ' ' + months[now.getMonth()];
+}
+
+// ===== NAVIGATION =====
+function navigateTo(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  document.getElementById('nav-' + page).classList.add('active');
+  state.currentPage = page;
+  if (page === 'home') renderHome();
+  if (page === 'livraisons') renderDeliveries();
+  if (page === 'stock') renderStock();
+  if (page === 'comptes') renderComptes();
+  if (page === 'profil') renderProfil();
+}
+
+// ===== CHIPS =====
+function selectChip(el, group, value) {
+  const parent = el.closest('.chips-row') || el.parentElement;
+  parent.querySelectorAll('.chip').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
+  state.chipSelections[group] = value;
+}
+function getChip(group) { return state.chipSelections[group] || null; }
+
+// ===== MEMBER SELECT =====
+function selectMember(id, el) {
+  document.querySelectorAll('.member-bar .member-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  state.currentMember = id;
+  renderHome();
+}
+
+// ===== MODALS =====
+function openModal(id) {
+  document.getElementById(id).classList.add('open');
+}
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+}
+
+// Close on overlay click
+document.querySelectorAll('.modal-overlay').forEach(overlay => {
+  overlay.addEventListener('click', function(e) {
+    if (e.target === this) this.classList.remove('open');
+  });
+});
+
+// ===== HOME =====
+function renderHome() {
+  const data = getData();
+  const member = state.currentMember;
+
+  let deliveries = data.deliveries;
+  if (member !== 'all') deliveries = deliveries.filter(d => d.member === member);
+
+  const totalReceived = deliveries.filter(d => d.status === 'paid').reduce((s,d) => s + (d.total||0), 0);
+  const totalPending = deliveries.filter(d => d.status === 'pending').reduce((s,d) => s + (d.total||0), 0);
+  const totalUnits = deliveries.reduce((s,d) => s + (d.qty||1), 0);
+
+  // Week CA
+  const now = Date.now();
+  const weekAgo = now - 7*24*60*60*1000;
+  const caWeek = deliveries.filter(d => d.ts >= weekAgo).reduce((s,d) => s + (d.total||0), 0);
+
+  document.getElementById('total-received').textContent = formatMoney(totalReceived);
+  document.getElementById('total-pending').textContent = formatMoney(totalPending);
+  document.getElementById('total-deliveries').textContent = deliveries.length;
+  document.getElementById('total-units').textContent = totalUnits;
+  document.getElementById('ca-week').textContent = formatMoney(caWeek);
+
+  // Stock total
+  const stock = data.stock;
+  const stockTotal = Object.values(stock).reduce((s,v) => s + (v.qty||0), 0);
+  document.getElementById('stock-total').textContent = stockTotal;
+
+  // Recent deliveries (last 5)
+  const recent = [...data.deliveries].sort((a,b) => b.ts - a.ts)
+    .filter(d => member === 'all' || d.member === member).slice(0,5);
+
+  const el = document.getElementById('recent-deliveries-list');
+  if (!recent.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📦</div><p>Aucune livraison pour l\'instant</p></div>';
+    return;
+  }
+  el.innerHTML = recent.map(d => deliveryCard(d)).join('');
+}
+
+function deliveryCard(d) {
+  const m = getMemberInfo(d.member);
+  return `<div class="delivery-item" onclick="showDeliveryDetail('${d.id}')">
+    <div class="delivery-top">
+      <div class="delivery-member">
+        <div class="delivery-avatar" style="background:${m.color}">${m.emoji}</div>
+        <div class="delivery-name">${m.name}${d.flavor ? ' · ' + d.flavor : ''}</div>
+      </div>
+      <div class="delivery-amount">${formatMoney(d.total)}</div>
+    </div>
+    <div class="delivery-bottom">
+      <div class="delivery-info">
+        <span>📅 ${formatDate(d.ts)}</span>
+        ${d.qty ? '<span>📦 ' + d.qty + ' u.</span>' : ''}
+        ${d.client ? '<span>👤 ' + d.client + '</span>' : ''}
+      </div>
+      ${statusBadge(d.status)}
+    </div>
+  </div>`;
+}
+
+// ===== DELIVERIES PAGE =====
+function renderDeliveries() {
+  const data = getData();
+  let deliveries = [...data.deliveries].sort((a,b) => b.ts - a.ts);
+
+  const filt = state.deliveryFilter;
+  if (filt !== 'all') deliveries = deliveries.filter(d => d.member === filt);
+
+  const sfilt = state.statusFilter;
+  if (sfilt !== 'all') deliveries = deliveries.filter(d => d.status === sfilt);
+
+  document.getElementById('delivery-count').textContent = deliveries.length + ' livraison' + (deliveries.length > 1 ? 's' : '');
+
+  const el = document.getElementById('all-deliveries-list');
+  if (!deliveries.length) {
+    el.innerHTML = '<div class="empty-state"><div class="icon">📦</div><p>Aucune livraison</p></div>';
+    return;
+  }
+
+  // Group by date
+  let html = '';
+  let lastDate = '';
+  deliveries.forEach(d => {
+    const dateStr = new Date(d.ts).toLocaleDateString('fr-FR', { day:'2-digit', month:'long', year:'numeric' });
+    if (dateStr !== lastDate) {
+      html += `<div class="date-divider">${dateStr}</div>`;
+      lastDate = dateStr;
+    }
+    html += deliveryCard(d);
+  });
+  el.innerHTML = html;
+}
+
+function filterDeliveries(member, el) {
+  document.querySelectorAll('#page-livraisons .member-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  state.deliveryFilter = member;
+  renderDeliveries();
+}
+function filterStatus(status, el) {
+  document.querySelectorAll('#page-livraisons .tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  state.statusFilter = status;
+  renderDeliveries();
+}
+
+// ===== STOCK =====
+function renderStock() {
+  const data = getData();
+  const stock = data.stock;
+  const flavors = Object.keys(stock);
+  const grid = document.getElementById('stock-grid');
+
+  if (!flavors.length) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="icon">🧪</div><p>Aucun goût en stock</p></div>';
+    document.getElementById('stock-total-page').textContent = '0 unités';
+    document.getElementById('stock-progress').style.width = '0%';
+    document.getElementById('stock-sub').textContent = 'Stock vide';
+    return;
+  }
+
+  const totalQty = flavors.reduce((s,f) => s + (stock[f].qty||0), 0);
+  const maxQty = flavors.reduce((s,f) => s + (stock[f].max||50), 0);
+
+  grid.innerHTML = flavors.map(f => {
+    const s = stock[f];
+    const qty = s.qty || 0;
+    const max = s.max || 50;
+    const pct = Math.round((qty/max)*100);
+    let qtyClass = 'ok', barColor = 'var(--green)';
+    if (pct < 25) { qtyClass = 'low'; barColor = 'var(--red)'; }
+    else if (pct < 50) { qtyClass = 'mid'; barColor = 'var(--orange)'; }
+    return `<div class="stock-item" onclick="openEditStock('${f}')">
+      <div class="stock-flavor">🧪 ${f}</div>
+      <div class="stock-qty ${qtyClass}">${qty}</div>
+      <div class="stock-sub">${pct}% · max ${max}</div>
+      <div class="stock-bar"><div class="stock-bar-fill" style="width:${pct}%;background:${barColor}"></div></div>
+    </div>`;
+  }).join('');
+
+  document.getElementById('stock-total-page').textContent = totalQty + ' unités';
+  document.getElementById('stock-progress').style.width = Math.round((totalQty/maxQty)*100) + '%';
+  document.getElementById('stock-sub').textContent = `${totalQty} / ${maxQty} unités`;
+}
+
+// ===== COMPTES =====
+function renderComptes() {
+  const data = getData();
+  const el = document.getElementById('members-finance-list');
+
+  el.innerHTML = MEMBERS.map(m => {
+    const mDeliveries = data.deliveries.filter(d => d.member === m.id);
+    const paid = mDeliveries.filter(d => d.status === 'paid').reduce((s,d) => s + (d.total||0), 0);
+    const pending = mDeliveries.filter(d => d.status !== 'paid').reduce((s,d) => s + (d.total||0), 0);
+    const count = mDeliveries.length;
+    return `<div class="member-stat-row">
+      <div class="member-stat-left">
+        <div class="member-stat-avatar" style="background:${m.color}">${m.emoji}</div>
+        <div>
+          <div class="member-stat-name">${m.name}</div>
+          <div class="member-stat-sub">${count} livraison${count>1?'s':''}</div>
+        </div>
+      </div>
+      <div class="member-stat-right">
+        <div class="member-stat-amount">${formatMoney(paid)}</div>
+        ${pending > 0 ? '<div class="member-stat-pending">+ ' + formatMoney(pending) + ' att.</div>' : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ===== PROFIL =====
+function renderProfil() {
+  const el = document.getElementById('members-list-settings');
+  el.innerHTML = MEMBERS.map(m => `
+    <div class="member-stat-row">
+      <div class="member-stat-left">
+        <div class="member-stat-avatar" style="background:${m.color}">${m.emoji}</div>
+        <div class="member-stat-name">${m.name}</div>
+      </div>
+      <div style="font-size:12px;color:var(--text-sec)">Actif ✅</div>
+    </div>
+  `).join('');
+}
+
+// ===== QUICK DELIVERY =====
+function openQuickDelivery() {
+  state.chipSelections['qmember'] = null;
+  state.chipSelections['qstatus'] = 'paid';
+  document.getElementById('quick-amount').value = '';
+  openModal('modal-quick');
+}
+function addQuickDelivery() {
+  const member = getChip('qmember');
+  const amount = parseFloat(document.getElementById('quick-amount').value);
+  const status = getChip('qstatus') || 'paid';
+  if (!member) { alert('Choisis un livreur'); return; }
+  if (!amount || amount <= 0) { alert('Entre un montant'); return; }
+  const data = getData();
+  const delivery = {
+    id: generateId(), member, total: amount, qty: 1,
+    flavor: '', client: '', status, ts: Date.now(), quick: true
+  };
+  data.deliveries.push(delivery);
+  saveData(data);
+  closeModal('modal-quick');
+  renderHome();
+  showToast('⚡ Livraison enregistrée !');
+}
+
+// ===== ADD DELIVERY =====
+function openAddDelivery() {
+  state.chipSelections['dmember'] = null;
+  state.chipSelections['dstatus'] = 'paid';
+  ['d-flavor','d-qty','d-price','d-total','d-client'].forEach(id => {
+    document.getElementById(id).value = '';
+  });
+  openModal('modal-delivery');
+}
+
+// Auto-calc total
+document.getElementById('d-qty').addEventListener('input', calcTotal);
+document.getElementById('d-price').addEventListener('input', calcTotal);
+function calcTotal() {
+  const qty = parseFloat(document.getElementById('d-qty').value) || 0;
+  const price = parseFloat(document.getElementById('d-price').value) || 0;
+  if (qty && price) document.getElementById('d-total').value = (qty * price).toFixed(2);
+}
+
+function addDelivery() {
+  const member = getChip('dmember');
+  const flavor = document.getElementById('d-flavor').value.trim();
+  const qty = parseInt(document.getElementById('d-qty').value) || 1;
+  const price = parseFloat(document.getElementById('d-price').value) || 0;
+  const total = parseFloat(document.getElementById('d-total').value) || (qty * price);
+  const client = document.getElementById('d-client').value.trim();
+  const status = getChip('dstatus') || 'paid';
+  if (!member) { alert('Choisis un livreur'); return; }
+  if (!total) { alert('Entre un montant'); return; }
+  const data = getData();
+  const delivery = { id: generateId(), member, flavor, qty, price, total, client, status, ts: Date.now() };
+  data.deliveries.push(delivery);
+
+  // Auto-destock
+  if (flavor && data.stock[flavor]) {
+    data.stock[flavor].qty = Math.max(0, (data.stock[flavor].qty||0) - qty);
+  }
+
+  saveData(data);
+  closeModal('modal-delivery');
+  renderDeliveries();
+  showToast('📦 Livraison ajoutée !');
+}
+
+// ===== STOCK MANAGEMENT =====
+function openAddStock() {
+  state.chipSelections['sop'] = 'add';
+  document.getElementById('s-flavor').value = '';
+  document.getElementById('s-qty').value = '';
+  openModal('modal-stock');
+}
+function openEditStock(flavor) {
+  state.chipSelections['sop'] = 'add';
+  document.getElementById('s-flavor').value = flavor;
+  document.getElementById('s-qty').value = '';
+  openModal('modal-stock');
+}
+function openAddFlavor() {
+  state.chipSelections['sop'] = 'set';
+  document.getElementById('s-flavor').value = '';
+  document.getElementById('s-qty').value = '';
+  openModal('modal-stock');
+}
+function updateStock() {
+  const flavor = document.getElementById('s-flavor').value.trim();
+  const qty = parseInt(document.getElementById('s-qty').value) || 0;
+  const op = getChip('sop') || 'add';
+  if (!flavor) { alert('Entre un goût'); return; }
+  const data = getData();
+  if (!data.stock[flavor]) data.stock[flavor] = { qty: 0, max: 50 };
+  if (op === 'add') data.stock[flavor].qty = (data.stock[flavor].qty || 0) + qty;
+  else if (op === 'set') data.stock[flavor].qty = qty;
+  else if (op === 'remove') data.stock[flavor].qty = Math.max(0, (data.stock[flavor].qty||0) - qty);
+  saveData(data);
+  closeModal('modal-stock');
+  renderStock();
+  showToast('🧪 Stock mis à jour !');
+}
+
+// ===== DELIVERY DETAIL =====
+function showDeliveryDetail(id) {
+  const data = getData();
+  const d = data.deliveries.find(x => x.id === id);
+  if (!d) return;
+  state.selectedDelivery = id;
+  const m = getMemberInfo(d.member);
+  document.getElementById('detail-title').innerHTML = `<div style="display:flex;align-items:center;gap:10px"><div style="background:${m.color};border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-weight:700">${m.emoji}</div>${m.name}</div>`;
+  document.getElementById('detail-content').innerHTML = `
+    <div class="receipt-card">
+      <h3>DÉTAIL LIVRAISON</h3>
+      <div class="receipt-row"><span>Date</span><span>${formatDate(d.ts)}</span></div>
+      ${d.flavor ? `<div class="receipt-row"><span>Goût</span><span>${d.flavor}</span></div>` : ''}
+      ${d.qty ? `<div class="receipt-row"><span>Quantité</span><span>${d.qty} unités</span></div>` : ''}
+      ${d.price ? `<div class="receipt-row"><span>Prix unitaire</span><span>${formatMoney(d.price)}</span></div>` : ''}
+      ${d.client ? `<div class="receipt-row"><span>Client</span><span>${d.client}</span></div>` : ''}
+      <div class="receipt-row"><span>Statut</span><span>${d.status === 'paid' ? '✅ Payé' : d.status === 'pending' ? '⏳ En attente' : '💛 Partiel'}</span></div>
+      <div class="receipt-total"><span>TOTAL</span><span style="color:var(--green)">${formatMoney(d.total)}</span></div>
+    </div>
+  `;
+  const payBtn = document.getElementById('detail-pay-btn');
+  payBtn.style.display = d.status !== 'paid' ? 'block' : 'none';
+  openModal('modal-detail');
+}
+
+function markPaid() {
+  const data = getData();
+  const idx = data.deliveries.findIndex(d => d.id === state.selectedDelivery);
+  if (idx !== -1) {
+    data.deliveries[idx].status = 'paid';
+    saveData(data);
+    closeModal('modal-detail');
+    if (state.currentPage === 'livraisons') renderDeliveries();
+    else renderHome();
+    showToast('✅ Marqué comme payé !');
+  }
+}
+
+function deleteDelivery() {
+  if (!confirm('Supprimer cette livraison ?')) return;
+  const data = getData();
+  data.deliveries = data.deliveries.filter(d => d.id !== state.selectedDelivery);
+  saveData(data);
+  closeModal('modal-detail');
+  if (state.currentPage === 'livraisons') renderDeliveries();
+  else renderHome();
+  showToast('🗑️ Supprimée');
+}
+
+// ===== RECEIPT =====
+function generateReceipt() {
+  const data = getData();
+  const now = new Date();
+  const totalPaid = data.deliveries.filter(d => d.status === 'paid').reduce((s,d) => s + d.total, 0);
+  const totalPending = data.deliveries.filter(d => d.status !== 'paid').reduce((s,d) => s + d.total, 0);
+
+  const memberBreakdown = MEMBERS.map(m => {
+    const mD = data.deliveries.filter(d => d.member === m.id);
+    const paid = mD.filter(d => d.status === 'paid').reduce((s,d) => s + d.total, 0);
+    return `<div class="receipt-row"><span>${m.name}</span><span>${formatMoney(paid)}</span></div>`;
+  }).join('');
+
+  document.getElementById('receipt-content').innerHTML = `
+    <div class="receipt-card">
+      <h3>REÇU PUFF 9K — ${now.toLocaleDateString('fr-FR')}</h3>
+      ${memberBreakdown}
+      <div class="receipt-row"><span>En attente</span><span style="color:var(--orange)">${formatMoney(totalPending)}</span></div>
+      <div class="receipt-total"><span>TOTAL ENCAISSÉ</span><span style="color:var(--green)">${formatMoney(totalPaid)}</span></div>
+    </div>
+    <div style="text-align:center;font-size:12px;color:var(--text-sec);margin-top:8px">${data.deliveries.length} livraison(s) au total</div>
+  `;
+  openModal('modal-receipt');
+}
+
+// ===== MEMBER MODAL =====
+function showMemberModal() {
+  // Simple member switch
+  const names = MEMBERS.map(m => m.name);
+  const current = state.currentMember === 'all' ? 'Tous' : getMemberInfo(state.currentMember).name;
+  // cycle through members
+  const idx = MEMBERS.findIndex(m => m.id === state.currentMember);
+  const next = MEMBERS[(idx + 1) % MEMBERS.length];
+  state.currentMember = next.id;
+  document.getElementById('current-avatar').textContent = next.emoji;
+  renderHome();
+  showToast('👤 ' + next.name);
+}
+
+// ===== EXPORT =====
+function exportData() {
+  const data = getData();
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'puff9k_' + new Date().toISOString().split('T')[0] + '.json';
+  a.click();
+  showToast('📤 Export réussi !');
+}
+function resetData() {
+  localStorage.removeItem('puff9k_data');
+  location.reload();
+}
+
+// ===== TOGGLE =====
+function toggleThis(el) {
+  el.classList.toggle('on');
+}
+
+// ===== TOAST =====
+function showToast(msg) {
+  const t = document.createElement('div');
+  t.style.cssText = `
+    position:fixed;top:80px;left:50%;transform:translateX(-50%);
+    background:rgba(30,30,40,0.95);backdrop-filter:blur(20px);
+    border:1px solid rgba(255,255,255,0.15);border-radius:100px;
+    padding:10px 20px;font-size:14px;font-weight:500;
+    z-index:9999;color:#fff;
+    animation:toastIn 0.3s ease;
+    box-shadow:0 8px 24px rgba(0,0,0,0.4);
+  `;
+  t.innerHTML = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 2000);
+}
+
+// ===== SAMPLE DATA (first run) =====
+
+function initSampleData() {
+  const data = getData();
+
+  if (!data.deliveries) data.deliveries = [];
+  if (!data.stock) data.stock = {};
+  if (!data.receipts) data.receipts = [];
+
+  saveData(data);
+}
+
+// ===== TOAST CSS =====
+const style = document.createElement('style');
+style.textContent = `
+  @keyframes toastIn {
+    from { opacity:0; transform:translateX(-50%) translateY(-10px); }
+    to { opacity:1; transform:translateX(-50%) translateY(0); }
+  }
+`;
+document.head.appendChild(style);
+
+// ===== INIT =====
+updateDate();
+initSampleData();
+renderHome();
+renderProfil();
+</script>
+</body>
+</html>
